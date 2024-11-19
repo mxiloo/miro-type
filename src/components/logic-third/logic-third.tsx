@@ -83,35 +83,19 @@ function CanvasComponentThird() {
         const startEdge = getConnectedEdge(rect1, start);
         const endEdge = getConnectedEdge(rect2, end);
 
-        console.log(`Начало: ${startEdge}`);
-        console.log(`Конец: ${endEdge}`);
+        // console.log(start);
+        // console.log(`Начало: ${startEdge}`);
+        // console.log(`Конец: ${endEdge}`);
 
         const adjustedStart = adjustPointWithOffset(rect1, start, startEdge);
-        // console.log(adjustedStart)
+        console.log(start)
+        console.log(adjustedStart)
         const adjustedEnd = adjustPointWithOffset(rect2, end, endEdge);
 
         let path: Point[] = [adjustedStart];
 
-        // Добавляем промежуточные точки для обхода фигур
-        if (startEdge === 'left' || startEdge === 'right') {
-            
-            if (adjustedStart.y <= adjustedEnd.y) {
-                path.push({ x: adjustedStart.x, y: adjustedEnd.y });
-                path.push({ x: adjustedEnd.x, y: adjustedEnd.y });
-            } else {
-                path.push({ x: adjustedStart.x, y: adjustedEnd.y });
-                path.push({ x: adjustedEnd.x, y: adjustedEnd.y });
-            }
-        } else if (startEdge === 'top' || startEdge === 'bottom') {
-            
-            if (adjustedStart.x <= adjustedEnd.x) {
-                path.push({ x: adjustedEnd.x, y: adjustedStart.y });
-                path.push({ x: adjustedEnd.x, y: adjustedEnd.y });
-            } else {
-                path.push({ x: adjustedEnd.x, y: adjustedStart.y });
-                path.push({ x: adjustedEnd.x, y: adjustedEnd.y });
-            }
-        }
+        // Добавить автоматическое промежуточные точки для обхода фигур
+        
 
         path.push(adjustedEnd);
 
@@ -162,7 +146,7 @@ function CanvasComponentThird() {
             point: { x: 0, y: -50 }, angle: -90
         };
         const cPoint2: ConnectionPoint = {
-            point: { x: -50, y: 0 }, angle: 180
+            point: { x: 50, y: 0 }, angle: 0
         };
 
         ctx.fillStyle = 'gray';
