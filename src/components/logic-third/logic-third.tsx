@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from 'react';
 
 type Point = {
     x: number;
@@ -25,15 +25,6 @@ type ConnectionPoint = {
 function CanvasComponentThird() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    // const [edge, setEdge] = useState<any>({
-    //     leftPosition: { x: -50, y: 0 }, leftAngle: 180, // left
-    //     rightPosition: { x: 50, y: 0 }, rightAngle: 0, // right
-    //     topPoint: { x: 0, y: -50 }, topAngle: -90, // top
-    //     bottomPoint: { x: 0, y: 50 }, angle: 90 // bottom
-    // })
-
-    // console.log(edge.leftPosition)
-
     const OFFSET = 10; // Смещение для отступа линии от грани
 
     const getConnectedEdge = (rect: Rect, point: Point): string => {
@@ -50,76 +41,119 @@ function CanvasComponentThird() {
         return 'none';
     };
 
-    const dataConverter = (
-        rect1: Rect,
-        rect2: Rect,
-        cPoint1: ConnectionPoint,
-        cPoint2: ConnectionPoint
-    ): Point[] => {
-        const adjustPointWithOffset = (rect: Rect, point: Point, edge: string) => {
-            switch (edge) {
-                case 'top':
-                    return { x: point.x, y: point.y - OFFSET };
-                case 'bottom':
-                    return { x: point.x, y: point.y + OFFSET };
-                case 'left':
-                    return { x: point.x - OFFSET, y: point.y };
-                case 'right':
-                    return { x: point.x + OFFSET, y: point.y };
-                default:
-                    return point;
-            }
-        };
-
-        const start = {
-            x: rect1.position.x + cPoint1.point.x,
-            y: rect1.position.y + cPoint1.point.y,
-        };
-        const end = {
-            x: rect2.position.x + cPoint2.point.x,
-            y: rect2.position.y + cPoint2.point.y,
-        };
-
-        const startEdge = getConnectedEdge(rect1, start);
-        const endEdge = getConnectedEdge(rect2, end);
-
-        // console.log(start);
-        // console.log(`Начало: ${startEdge}`);
-        // console.log(`Конец: ${endEdge}`);
-
-        const adjustedStart = adjustPointWithOffset(rect1, start, startEdge);
-        console.log(start)
-        console.log(adjustedStart)
-        const adjustedEnd = adjustPointWithOffset(rect2, end, endEdge);
-
-        let path: Point[] = [adjustedStart];
-
-        // Добавить автоматическое промежуточные точки для обхода фигур
-        
-
-        path.push(adjustedEnd);
-
-        // Добавляем конечные точки на грани прямоугольников
-        // Перпендикуляр граням
-        path.push({
-            x: end.x,
-            y: end.y,
-        });
-        path.unshift({
-            x: start.x,
-            y: start.y,
-        });
-
-        return path;
+    const adjustPointWithOffset = (rect: Rect, point: Point, edge: string): Point => {
+        switch (edge) {
+            case 'top':
+                return { x: point.x, y: point.y - OFFSET };
+            case 'bottom':
+                return { x: point.x, y: point.y + OFFSET };
+            case 'left':
+                return { x: point.x - OFFSET, y: point.y };
+            case 'right':
+                return { x: point.x + OFFSET, y: point.y };
+            default:
+                return point;
+        }
     };
 
-    const drawConnection = (ctx: CanvasRenderingContext2D, path: Point[]) => {
+    const aStar = (start: Point, end: Point, obstacles: Rect[]): Point[] => {
+        const isInsideRect = (point: Point, rect: Rect): boolean => {
+            const left = rect.position.x - rect.size.width / 2 - OFFSET;
+            const right = rect.position.x + rect.size.width / 2 + OFFSET;
+            const top = rect.position.y - rect.size.height / 2 - OFFSET;
+            const bottom = rect.position.y + rect.size.height / 2 + OFFSET;
+
+            // console.log('ререндер')
+            return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
+        };
+
+        const generateNeighbors = (point: Point): Point[] => {
+            return [
+                { x: point.x + 1, y: point.y },
+                { x: point.x - 1, y: point.y },
+                { x: point.x, y: point.y + 1 },
+                { x: point.x, y: point.y - 1 },
+            ];
+        };
+
+        const heuristic = (a: Point, b: Point) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+
+        const openSet: Point[] = [start];
+        const cameFrom = new Map<string, Point>();
+        const gScore = new Map<string, number>();
+        const fScore = new Map<string, number>();
+
+        const pointKey = (point: Point) => `${point.x},${point.y}`;
+        gScore.set(pointKey(start), 0);
+        fScore.set(pointKey(start), heuristic(start, end));
+
+        while (openSet.length > 0) {
+            openSet.sort((a, b) => fScore.get(pointKey(a))! - fScore.get(pointKey(b))!);
+            const current = openSet.shift()!;
+
+            if (current.x === end.x && current.y === end.y) {
+                const path: Point[] = [];
+                let currentNode: Point | undefined = current;
+                while (currentNode) {
+                    path.unshift(currentNode);
+                    currentNode = cameFrom.get(pointKey(currentNode));
+                }
+                return path;
+            }
+
+            for (const neighbor of generateNeighbors(current)) {
+                if (obstacles.some((rect) => isInsideRect(neighbor, rect))) {
+                    continue;
+                }
+
+                const tentativeGScore = gScore.get(pointKey(current))! + 1;
+
+                if (tentativeGScore < (gScore.get(pointKey(neighbor)) ?? Infinity)) {
+                    cameFrom.set(pointKey(neighbor), current);
+                    gScore.set(pointKey(neighbor), tentativeGScore);
+                    fScore.set(pointKey(neighbor), tentativeGScore + heuristic(neighbor, end));
+
+                    if (!openSet.some((p) => p.x === neighbor.x && p.y === neighbor.y)) {
+                        openSet.push(neighbor);
+                    }
+                }
+            }
+        }
+
+        return [];
+    };
+
+    const drawPath = (ctx: CanvasRenderingContext2D, path: Point[]) => {
+        if (path.length < 2) return;
+
         ctx.beginPath();
         ctx.moveTo(path[0].x, path[0].y);
+
         for (let i = 1; i < path.length; i++) {
             ctx.lineTo(path[i].x, path[i].y);
-        };
-        ctx.strokeStyle = 'black';
+        }
+
+        ctx.strokeStyle = 'blue';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    };
+
+    const drawLinesToAdjustedPoints = (
+        ctx: CanvasRenderingContext2D,
+        start: Point,
+        adjustedStart: Point,
+        end: Point,
+        adjustedEnd: Point
+    ) => {
+        ctx.beginPath();
+
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(adjustedStart.x, adjustedStart.y);
+
+        ctx.moveTo(end.x, end.y);
+        ctx.lineTo(adjustedEnd.x, adjustedEnd.y);
+
+        ctx.strokeStyle = 'red';
         ctx.lineWidth = 2;
         ctx.stroke();
     };
@@ -141,13 +175,26 @@ function CanvasComponentThird() {
             size: { width: 100, height: 100 },
         };
 
+        // const cPoint1: ConnectionPoint = { point: { x: -20, y: -50 }, angle: -90 };
+        const cPoint1: ConnectionPoint = { point: { x: 50, y: 0 }, angle: 0 }
+        // const cPoint2: ConnectionPoint = { point: { x: 50, y: 0 }, angle: 0 };
+        const cPoint2: ConnectionPoint = { point: { x: 0, y: 50 }, angle: 90 };
 
-        const cPoint1: ConnectionPoint = {
-            point: { x: 0, y: -50 }, angle: -90
+        const start = {
+            x: rect1.position.x + cPoint1.point.x,
+            y: rect1.position.y + cPoint1.point.y,
         };
-        const cPoint2: ConnectionPoint = {
-            point: { x: 50, y: 0 }, angle: 0
+
+        const end = {
+            x: rect2.position.x + cPoint2.point.x,
+            y: rect2.position.y + cPoint2.point.y,
         };
+
+        const adjustedStart = adjustPointWithOffset(rect1, start, getConnectedEdge(rect1, start));
+        const adjustedEnd = adjustPointWithOffset(rect2, end, getConnectedEdge(rect2, end));
+
+        const obstacles = [rect1, rect2];
+        const path = aStar(adjustedStart, adjustedEnd, obstacles);
 
         ctx.fillStyle = 'gray';
         ctx.fillRect(
@@ -163,15 +210,11 @@ function CanvasComponentThird() {
             rect2.size.height
         );
 
-        const path = dataConverter(rect1, rect2, cPoint1, cPoint2);
-        drawConnection(ctx, path);
+        drawLinesToAdjustedPoints(ctx, start, adjustedStart, end, adjustedEnd);
+        drawPath(ctx, path);
     }, []);
 
-    return (
-        <div>
-            <canvas ref={canvasRef} width={800} height={600}></canvas>
-        </div>
-    );
+    return <canvas ref={canvasRef} width={1000} height={1000}></canvas>;
 }
 
 export default CanvasComponentThird;

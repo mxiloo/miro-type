@@ -9,9 +9,9 @@ export default function Home() {
   return (
     <div className={styles.page}>
       {/* <CanvasComponent /> */}
-      <CanvasComponentTest />
+      {/* <CanvasComponentTest /> */}
       <CanvasComponentThird />
-      <CanvasComponentAstar />
+      {/* <CanvasComponentAstar /> */}
     </div>
   );
 }

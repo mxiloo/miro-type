@@ -17,12 +17,12 @@ type Rect = {
     size: Size;
 };
 
+type Edge = 'top' | 'right' | 'bottom' | 'left';
+
 type ConnectionPoint = {
     point: Point;
     angle: number; // угол в градусах
-  };
-
-type Edge = 'top' | 'right' | 'bottom' | 'left';
+};
 
 function CanvasComponentAstar() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -30,19 +30,17 @@ function CanvasComponentAstar() {
     const [startEdge, setStartEdge] = useState<Edge>('top');
     const [endEdge, setEndEdge] = useState<Edge>('right');
 
-    const OFFSET = 10; // Смещение для соединительных линий от границ
-
     // Функция для получения координат точки на выбранной грани
     const getEdgePoint = (rect: Rect, edge: Edge): Point => {
         switch (edge) {
             case 'top':
-                return { x: rect.position.x, y: rect.position.y - rect.size.height / 2 - OFFSET };
+                return { x: rect.position.x, y: rect.position.y - rect.size.height / 2 };
             case 'bottom':
-                return { x: rect.position.x, y: rect.position.y + rect.size.height / 2 + OFFSET };
+                return { x: rect.position.x, y: rect.position.y + rect.size.height / 2 };
             case 'left':
-                return { x: rect.position.x - rect.size.width / 2 - OFFSET, y: rect.position.y };
+                return { x: rect.position.x - rect.size.width / 2, y: rect.position.y };
             case 'right':
-                return { x: rect.position.x + rect.size.width / 2 + OFFSET, y: rect.position.y };
+                return { x: rect.position.x + rect.size.width / 2, y: rect.position.y };
             default:
                 return rect.position;
         }
@@ -58,37 +56,40 @@ function CanvasComponentAstar() {
         const rows = grid.length;
         const cols = grid[0].length;
 
-        const heuristic = (a: Point, b: Point) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-        
-        // Преобразование точки в клетку
-        const toCell = (point: Point) => ({
-            x: Math.floor(point.x / cellSize),
-            y: Math.floor(point.y / cellSize),
-        });
-
-        const startCell = toCell(start);
-        const endCell = toCell(end);
+        const heuristic = (a: Point, b: Point) =>
+            Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 
         const openSet: any[] = [];
         const closedSet: Set<string> = new Set();
         const cameFrom: { [key: string]: Point } = {};
 
-        openSet.push({ ...startCell, g: 0, h: heuristic(start, end), f: 0, parent: null });
+        openSet.push({
+            x: start.x,
+            y: start.y,
+            g: 0,
+            h: heuristic(start, end),
+            f: 0,
+            parent: null,
+        });
 
-        const toKey = (point: { x: number; y: number }) => `${point.x},${point.y}`;
+        const toKey = (point: Point) =>
+            `${Math.floor(point.x / cellSize)},${Math.floor(point.y / cellSize)}`;
 
         while (openSet.length > 0) {
             const current = openSet.sort((a, b) => a.f - b.f).shift()!;
             const currentKey = toKey(current);
 
-            if (current.x === endCell.x && current.y === endCell.y) {
+            if (
+                Math.floor(current.x / cellSize) === Math.floor(end.x / cellSize) &&
+                Math.floor(current.y / cellSize) === Math.floor(end.y / cellSize)
+            ) {
                 let path: Point[] = [];
-                let node: { x: number; y: number } | null = current;
+                let node: Point | null = current;
 
                 while (node) {
                     path.push({
-                        x: node.x * cellSize + cellSize / 2,
-                        y: node.y * cellSize + cellSize / 2,
+                        x: node.x,
+                        y: node.y,
                     });
                     node = cameFrom[toKey(node)];
                 }
@@ -99,10 +100,10 @@ function CanvasComponentAstar() {
             closedSet.add(currentKey);
 
             const neighbors = [
-                { x: current.x + 1, y: current.y },
-                { x: current.x - 1, y: current.y },
-                { x: current.x, y: current.y + 1 },
-                { x: current.x, y: current.y - 1 },
+                { x: current.x + cellSize, y: current.y },
+                { x: current.x - cellSize, y: current.y },
+                { x: current.x, y: current.y + cellSize },
+                { x: current.x, y: current.y - cellSize },
             ];
 
             for (const neighbor of neighbors) {
@@ -110,19 +111,24 @@ function CanvasComponentAstar() {
 
                 if (
                     neighbor.x < 0 ||
-                    neighbor.x >= cols ||
+                    neighbor.x >= cols * cellSize ||
                     neighbor.y < 0 ||
-                    neighbor.y >= rows ||
-                    grid[neighbor.y][neighbor.x] === 1 ||
+                    neighbor.y >= rows * cellSize ||
+                    grid[Math.floor(neighbor.y / cellSize)][Math.floor(neighbor.x / cellSize)] === 1 ||
                     closedSet.has(neighborKey)
                 ) {
                     continue;
                 }
 
                 const tentativeG = current.g + 1;
-                const existing = openSet.find(n => n.x === neighbor.x && n.y === neighbor.y);
+                const existing = openSet.find(
+                    n =>
+                        Math.floor(n.x / cellSize) === Math.floor(neighbor.x / cellSize) &&
+                        Math.floor(n.y / cellSize) === Math.floor(neighbor.y / cellSize)
+                );
+
                 if (!existing || tentativeG < existing.g) {
-                    const h = heuristic(neighbor, endCell);
+                    const h = heuristic(neighbor, end);
                     openSet.push({
                         ...neighbor,
                         g: tentativeG,
@@ -156,7 +162,7 @@ function CanvasComponentAstar() {
             for (let y = top; y < bottom; y++) {
                 for (let x = left; x < right; x++) {
                     if (y >= 0 && y < grid.length && x >= 0 && x < grid[0].length) {
-                        grid[y][x] = 1; // Препятствие
+                        grid[y][x] = 1;
                     }
                 }
             }
@@ -169,10 +175,9 @@ function CanvasComponentAstar() {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        const cellSize = 20; // Размер клетки
+        const cellSize = 20;
         const grid = generateGrid(canvas.width, canvas.height, cellSize);
 
-        // Два прямоугольника
         const rect1: Rect = {
             position: { x: 150, y: 150 },
             size: { width: 100, height: 100 },
@@ -182,19 +187,15 @@ function CanvasComponentAstar() {
             size: { width: 100, height: 100 },
         };
 
-        // Получаем точки старта и конца в зависимости от выбранных граней
         const start = getEdgePoint(rect1, startEdge);
         const end = getEdgePoint(rect2, endEdge);
 
-        // Маркируем препятствия на сетке
         markObstaclesOnGrid(grid, [rect1, rect2], cellSize);
 
-        // Находим путь для выбранных граней
         const path = aStar(start, end, grid, cellSize);
-        
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Визуализация сетки
         for (let y = 0; y < grid.length; y++) {
             for (let x = 0; x < grid[y].length; x++) {
                 ctx.strokeStyle = grid[y][x] === 1 ? "inherit" : "lightgray";
@@ -202,7 +203,6 @@ function CanvasComponentAstar() {
             }
         }
 
-        // Отрисовка прямоугольников
         [rect1, rect2].forEach(rect => {
             ctx.fillStyle = "gray";
             ctx.fillRect(
@@ -213,7 +213,6 @@ function CanvasComponentAstar() {
             );
         });
 
-        // Отрисовка пути, если найден
         if (path) {
             ctx.beginPath();
             ctx.moveTo(path[0].x, path[0].y);
