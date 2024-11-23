@@ -13,19 +13,19 @@ type Size = {
 };
 
 type Rect = {
-    position: Point; // координата центра прямоугольника
+    position: Point; // центр прямоугольника
     size: Size;
 };
 
 type ConnectionPoint = {
-    point: Point;
+    point: Point; // смещение относительно центра
     angle: number; // угол в градусах
 };
 
 function CanvasComponentThird() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    const OFFSET = 10; // Смещение для отступа линии от грани
+    const OFFSET = 10; // Смещение для отступа линии от края
 
     const getConnectedEdge = (rect: Rect, point: Point): string => {
         const left = rect.position.x - rect.size.width / 2;
@@ -33,10 +33,12 @@ function CanvasComponentThird() {
         const top = rect.position.y - rect.size.height / 2;
         const bottom = rect.position.y + rect.size.height / 2;
 
-        if (point.x === left) return 'left';
-        if (point.x === right) return 'right';
-        if (point.y === top) return 'top';
-        if (point.y === bottom) return 'bottom';
+        const tolerance = 1;
+
+        if (Math.abs(point.x - left) <= tolerance) return 'left';
+        if (Math.abs(point.x - right) <= tolerance) return 'right';
+        if (Math.abs(point.y - top) <= tolerance) return 'top';
+        if (Math.abs(point.y - bottom) <= tolerance) return 'bottom';
 
         return 'none';
     };
@@ -63,23 +65,14 @@ function CanvasComponentThird() {
             const top = rect.position.y - rect.size.height / 2 - OFFSET;
             const bottom = rect.position.y + rect.size.height / 2 + OFFSET;
 
-            // console.log('ререндер')
-            return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
-        };
-
-        const generateNeighbors = (point: Point): Point[] => {
-            return [
-                { x: point.x + 1, y: point.y },
-                { x: point.x - 1, y: point.y },
-                { x: point.x, y: point.y + 1 },
-                { x: point.x, y: point.y - 1 },
-            ];
+            console.log('ререндер')
+            return point.x > left && point.x < right && point.y > top && point.y < bottom;
         };
 
         const heuristic = (a: Point, b: Point) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 
-        const openSet: Point[] = [start];
-        const cameFrom = new Map<string, Point>();
+        const openSet: Set<string> = new Set([`${start.x},${start.y}`]);
+        const cameFrom = new Map<string, string>();
         const gScore = new Map<string, number>();
         const fScore = new Map<string, number>();
 
@@ -87,34 +80,45 @@ function CanvasComponentThird() {
         gScore.set(pointKey(start), 0);
         fScore.set(pointKey(start), heuristic(start, end));
 
-        while (openSet.length > 0) {
-            openSet.sort((a, b) => fScore.get(pointKey(a))! - fScore.get(pointKey(b))!);
-            const current = openSet.shift()!;
+        while (openSet.size > 0) {
+            const currentKey = Array.from(openSet).reduce((a, b) =>
+                (fScore.get(a) ?? Infinity) < (fScore.get(b) ?? Infinity) ? a : b
+            );
 
-            if (current.x === end.x && current.y === end.y) {
+            openSet.delete(currentKey);
+            const [currentX, currentY] = currentKey.split(',').map(Number);
+            const current = { x: currentX, y: currentY };
+
+            if (Math.round(current.x) === Math.round(end.x) && Math.round(current.y) === Math.round(end.y)) {
                 const path: Point[] = [];
-                let currentNode: Point | undefined = current;
-                while (currentNode) {
-                    path.unshift(currentNode);
-                    currentNode = cameFrom.get(pointKey(currentNode));
+                let currentPathKey = currentKey;
+                while (currentPathKey) {
+                    const [x, y] = currentPathKey.split(',').map(Number);
+                    path.unshift({ x, y });
+                    currentPathKey = cameFrom.get(currentPathKey) as string;
                 }
                 return path;
             }
 
-            for (const neighbor of generateNeighbors(current)) {
-                if (obstacles.some((rect) => isInsideRect(neighbor, rect))) {
-                    continue;
-                }
+            for (const step of [-OFFSET, OFFSET]) {
+                const neighbors = [
+                    { x: current.x + step, y: current.y },
+                    { x: current.x, y: current.y + step },
+                ];
+                for (const neighbor of neighbors) {
+                    if (obstacles.some((rect) => isInsideRect(neighbor, rect))) continue;
 
-                const tentativeGScore = gScore.get(pointKey(current))! + 1;
+                    const neighborKey = pointKey(neighbor);
+                    const tentativeGScore = gScore.get(currentKey)! + 1;
 
-                if (tentativeGScore < (gScore.get(pointKey(neighbor)) ?? Infinity)) {
-                    cameFrom.set(pointKey(neighbor), current);
-                    gScore.set(pointKey(neighbor), tentativeGScore);
-                    fScore.set(pointKey(neighbor), tentativeGScore + heuristic(neighbor, end));
+                    if (tentativeGScore < (gScore.get(neighborKey) ?? Infinity)) {
+                        cameFrom.set(neighborKey, currentKey);
+                        gScore.set(neighborKey, tentativeGScore);
+                        fScore.set(neighborKey, tentativeGScore + heuristic(neighbor, end));
 
-                    if (!openSet.some((p) => p.x === neighbor.x && p.y === neighbor.y)) {
-                        openSet.push(neighbor);
+                        if (!openSet.has(neighborKey)) {
+                            openSet.add(neighborKey);
+                        }
                     }
                 }
             }
@@ -166,18 +170,10 @@ function CanvasComponentThird() {
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        const rect1: Rect = {
-            position: { x: 150, y: 150 },
-            size: { width: 100, height: 100 },
-        };
-        const rect2: Rect = {
-            position: { x: 400, y: 300 },
-            size: { width: 100, height: 100 },
-        };
+        const rect1: Rect = { position: { x: 150, y: 150 }, size: { width: 100, height: 100 } };
+        const rect2: Rect = { position: { x: 400, y: 300 }, size: { width: 100, height: 100 } };
 
-        // const cPoint1: ConnectionPoint = { point: { x: -20, y: -50 }, angle: -90 };
-        const cPoint1: ConnectionPoint = { point: { x: 50, y: 0 }, angle: 0 }
-        // const cPoint2: ConnectionPoint = { point: { x: 50, y: 0 }, angle: 0 };
+        const cPoint1: ConnectionPoint = { point: { x: -50, y: -30 }, angle: 180 };
         const cPoint2: ConnectionPoint = { point: { x: 0, y: 50 }, angle: 90 };
 
         const start = {

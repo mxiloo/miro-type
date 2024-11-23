@@ -11,7 +11,7 @@ export default function Home() {
       {/* <CanvasComponent /> */}
       {/* <CanvasComponentTest /> */}
       <CanvasComponentThird />
-      {/* <CanvasComponentAstar /> */}
+      <CanvasComponentAstar />
     </div>
   );
 }
