@@ -64,6 +64,7 @@ function CanvasComponentThird() {
             const right = rect.position.x + rect.size.width / 2 + OFFSET;
             const top = rect.position.y - rect.size.height / 2 - OFFSET;
             const bottom = rect.position.y + rect.size.height / 2 + OFFSET;
+            
             console.log('ререндер')
             return point.x > left && point.x < right && point.y > top && point.y < bottom;
         };
@@ -190,10 +191,10 @@ function CanvasComponentThird() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         const rect1: Rect = { position: { x: 150, y: 150 }, size: { width: 100, height: 100 } };
-        const rect2: Rect = { position: { x: 400, y: 300 }, size: { width: 100, height: 100 } };
+        const rect2: Rect = { position: { x: 400, y: 300  }, size: { width: 100, height: 100 } };
 
         const cPoint1: ConnectionPoint = { point: { x: 0, y: -50 }, angle: -90 };
-        const cPoint2: ConnectionPoint = { point: { x: 0, y: 50 }, angle: 90 };
+        const cPoint2: ConnectionPoint = { point: { x: -50, y: 0 }, angle: 180 };
 
         const start = {
             x: rect1.position.x + cPoint1.point.x,
