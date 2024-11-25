@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MIRO-TYPE
+## Построения пути от граней фигур
+___
+Ознакомиться с проектом можно по ссылке:
+___
+В проекте есть 2 компонента с двумя разными логиками. Суть у них одна - поиск и построение самого короткого пути из начальной точки к конечной.
+Для создания такой логики поведения был использован алгоритм aStar (A*). Верхний (первый) компонент использует сетку, как в классическом алгоритме, а второй - графы. 
 
-## Getting Started
+Чего я хотел добиться? Хотелось добиться максимальной универсальности, чтобы фигуры и точки могли находиться в любом месте canvas и чтобы они не ограничивались конкретно ячейками сетки.
+___
 
-First, run the development server:
+### Использование A* с графами
+![image](https://github.com/user-attachments/assets/164db006-54a7-4985-a5c1-fc4e2cf668c8)
+___
+
+### Использование A* с сеткой
+
+![image](https://github.com/user-attachments/assets/5e22600d-9141-49e4-bb56-b08898fdb013)
+___
+
+### Как выбрать любую из граней:
+Левая грань: { point: { x: -50, y: 0 }, angle: 180 }
+Правая грань: { point: { x: 50, y: 0 }, angle: 0 }
+Верхняя грань: { point: { x: 0, y: -50 }, angle: -90 }
+Нижняя грань: { point: { x: 0, y: 50 }, angle: 90 }
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+const rect1: Rect = { position: { x: 150, y: 150 }, size: { width: 100, height: 100 } };
+const rect2: Rect = { position: { x: 400, y: 300 }, size: { width: 100, height: 100 } };
+
+const cPoint1: ConnectionPoint = { point: { x: -50, y: -30 }, angle: 180 }
+const cPoint2: ConnectionPoint = { point: { x: 0, y: 50 }, angle: 90 };
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Что нужно доделать и подправить:
+1. В логике с графами у меня не получилось пока что добиться того, чтобы линия использовала минимальное количество поворотов. Однако путь простроится всегда из любой точки.
+2. В логике с сеткой удалось добиться того поведения построения линии, которого хотелось, однако остается проблема, что не все пути получается высчитать.
