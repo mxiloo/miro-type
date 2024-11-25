@@ -33,7 +33,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-, "src/components/logic-third/canvas-component-graph.test.ts", "next.config.cjs"  ],
+, "src/components/logic-third/canvas-component-graph.test.ts", "next.config.mjs"  ],
   "exclude": [
     "node_modules"
   ]
