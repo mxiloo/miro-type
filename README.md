@@ -19,10 +19,10 @@ ___
 ___
 
 ### Как выбрать любую из граней:
-Левая грань: { point: { x: -50, y: 0 }, angle: 180 }
-Правая грань: { point: { x: 50, y: 0 }, angle: 0 }
-Верхняя грань: { point: { x: 0, y: -50 }, angle: -90 }
-Нижняя грань: { point: { x: 0, y: 50 }, angle: 90 }
+* Левая грань: { point: { x: -50, y: 0 }, angle: 180 }
+* Правая грань: { point: { x: 50, y: 0 }, angle: 0 }
+* Верхняя грань: { point: { x: 0, y: -50 }, angle: -90 }
+* Нижняя грань: { point: { x: 0, y: 50 }, angle: 90 }
 
 ```bash
 const rect1: Rect = { position: { x: 150, y: 150 }, size: { width: 100, height: 100 } };
