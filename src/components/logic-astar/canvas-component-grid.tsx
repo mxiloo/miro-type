@@ -2,27 +2,27 @@
 
 import { useEffect, useRef } from 'react';
 
-type Point = {
+export type Point = {
     x: number;
     y: number;
 };
 
-type Size = {
+export type Size = {
     width: number;
     height: number;
 };
 
-type Rect = {
+export type Rect = {
     position: Point; // центр прямоугольника
     size: Size;
 };
 
-type ConnectionPoint = {
+export type ConnectionPoint = {
     point: Point; // смещение относительно центра
     angle: number; // угол в градусах
 };
 
-function CanvasComponentThird() {
+function CanvasComponentGrid() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     const OFFSET = 10; // Смещение для отступа линии от края
@@ -64,31 +64,34 @@ function CanvasComponentThird() {
             const right = rect.position.x + rect.size.width / 2 + OFFSET;
             const top = rect.position.y - rect.size.height / 2 - OFFSET;
             const bottom = rect.position.y + rect.size.height / 2 + OFFSET;
-
-            console.log('ререндер')
+            
+            // console.log('ререндер')
             return point.x > left && point.x < right && point.y > top && point.y < bottom;
         };
-
+    
         const heuristic = (a: Point, b: Point) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-
+    
+        const pointKey = (point: Point) => `${point.x},${point.y}`;
+        const directionKey = (from: Point, to: Point): string => `${to.x - from.x},${to.y - from.y}`;
+    
         const openSet: Set<string> = new Set([`${start.x},${start.y}`]);
         const cameFrom = new Map<string, string>();
+        const directions = new Map<string, string>(); // Хранение направления пути
         const gScore = new Map<string, number>();
         const fScore = new Map<string, number>();
-
-        const pointKey = (point: Point) => `${point.x},${point.y}`;
+    
         gScore.set(pointKey(start), 0);
         fScore.set(pointKey(start), heuristic(start, end));
-
+    
         while (openSet.size > 0) {
             const currentKey = Array.from(openSet).reduce((a, b) =>
                 (fScore.get(a) ?? Infinity) < (fScore.get(b) ?? Infinity) ? a : b
             );
-
+    
             openSet.delete(currentKey);
             const [currentX, currentY] = currentKey.split(',').map(Number);
             const current = { x: currentX, y: currentY };
-
+    
             if (Math.round(current.x) === Math.round(end.x) && Math.round(current.y) === Math.round(end.y)) {
                 const path: Point[] = [];
                 let currentPathKey = currentKey;
@@ -99,23 +102,35 @@ function CanvasComponentThird() {
                 }
                 return path;
             }
-
+    
             for (const step of [-OFFSET, OFFSET]) {
                 const neighbors = [
                     { x: current.x + step, y: current.y },
                     { x: current.x, y: current.y + step },
                 ];
+    
                 for (const neighbor of neighbors) {
                     if (obstacles.some((rect) => isInsideRect(neighbor, rect))) continue;
-
+    
                     const neighborKey = pointKey(neighbor);
                     const tentativeGScore = gScore.get(currentKey)! + 1;
-
-                    if (tentativeGScore < (gScore.get(neighborKey) ?? Infinity)) {
+    
+                    // Проверяем направление движения
+                    const currentDirection = directions.get(currentKey);
+                    const newDirection = directionKey(current, neighbor);
+    
+                    // Увеличиваем стоимость, если направление изменилось
+                    const directionChangePenalty = currentDirection && currentDirection !== newDirection ? 10 : 0;
+    
+                    if (tentativeGScore + directionChangePenalty < (gScore.get(neighborKey) ?? Infinity)) {
                         cameFrom.set(neighborKey, currentKey);
-                        gScore.set(neighborKey, tentativeGScore);
-                        fScore.set(neighborKey, tentativeGScore + heuristic(neighbor, end));
-
+                        gScore.set(neighborKey, tentativeGScore + directionChangePenalty);
+                        fScore.set(
+                            neighborKey,
+                            tentativeGScore + directionChangePenalty + heuristic(neighbor, end)
+                        );
+                        directions.set(neighborKey, newDirection);
+    
                         if (!openSet.has(neighborKey)) {
                             openSet.add(neighborKey);
                         }
@@ -123,9 +138,10 @@ function CanvasComponentThird() {
                 }
             }
         }
-
+    
         return [];
     };
+    
 
     const drawPath = (ctx: CanvasRenderingContext2D, path: Point[]) => {
         if (path.length < 2) return;
@@ -163,6 +179,10 @@ function CanvasComponentThird() {
     };
 
     useEffect(() => {
+        console.log('ререндер компонента')
+    }, []);
+
+    useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -171,10 +191,10 @@ function CanvasComponentThird() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         const rect1: Rect = { position: { x: 150, y: 150 }, size: { width: 100, height: 100 } };
-        const rect2: Rect = { position: { x: 400, y: 300 }, size: { width: 100, height: 100 } };
+        const rect2: Rect = { position: { x: 400, y: 300  }, size: { width: 100, height: 100 } };
 
-        const cPoint1: ConnectionPoint = { point: { x: -50, y: -30 }, angle: 180 };
-        const cPoint2: ConnectionPoint = { point: { x: 0, y: 50 }, angle: 90 };
+        const cPoint1: ConnectionPoint = { point: { x: 0, y: -50 }, angle: -90 };
+        const cPoint2: ConnectionPoint = { point: { x: 50, y: 0 }, angle: 0 };
 
         const start = {
             x: rect1.position.x + cPoint1.point.x,
@@ -213,4 +233,4 @@ function CanvasComponentThird() {
     return <canvas ref={canvasRef} width={1000} height={1000}></canvas>;
 }
 
-export default CanvasComponentThird;
+export default CanvasComponentGrid;
