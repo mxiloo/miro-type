@@ -28,13 +28,28 @@ function CanvasComponentGraph() {
     const [rect1Position, setRect1Position] = useState<'left' | 'right' | 'top' | 'bottom'>('left');
     const [rect2Position, setRect2Position] = useState<'left' | 'right' | 'top' | 'bottom'>('top');
 
+    const [xPosition, setXPosition] = useState<number>(); // Текущее значение X
+    const [yPosition, setYPosition] = useState<number>(); // Текущее значение Y
+
+    const [inputX, setInputX] = useState<number>(); // Локальное состояние для ввода X
+    const [inputY, setInputY] = useState<number>(); // Локальное состояние для ввода Y
+
     const OFFSET = 10; // Смещение для отступа линии от края
 
     const edgeConnectionPoints: Record<string, ConnectionPoint> = {
-        left: { point: { x: -50, y: 0 }, angle: 180 },
-        right: { point: { x: 50, y: 0 }, angle: 0 },
-        top: { point: { x: 0, y: -50 }, angle: -90 },
-        bottom: { point: { x: 0, y: 50 }, angle: 90 },
+        left: { point: { x: -50, y: yPosition === undefined ? 0 : yPosition }, angle: 180 },
+        right: { point: { x: 50, y: yPosition === undefined ? 0 : yPosition }, angle: 0 },
+        top: { point: { x: xPosition === undefined ? 0 : xPosition, y: -50 }, angle: -90 },
+        bottom: { point: { x: xPosition === undefined ? 0 : xPosition, y: 50 }, angle: 90 },
+    };
+
+    const applyCoordinates = () => {
+        // Обновляем координаты только при нажатии кнопки
+        if (rect1Position === 'left' || rect1Position === 'right') {
+            setYPosition(inputY); // Меняем только Y
+        } else if (rect1Position === 'top' || rect1Position === 'bottom') {
+            setXPosition(inputX); // Меняем только X
+        }
     };
 
     const getConnectedEdge = (rect: Rect, point: Point): string => {
@@ -173,6 +188,10 @@ function CanvasComponentGraph() {
     };
 
     useEffect(() => {
+        console.log('весь компонент')
+    }, [])
+
+    useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -224,8 +243,8 @@ function CanvasComponentGraph() {
         <>
             <div>
                 <label>
-                    Rect1 Position:
-                    <select value={rect1Position} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRect1Position(e.target.value as 'left' | 'right' | 'top' | 'bottom')}>
+                    Rect1 edge:
+                    <select value={rect1Position} onChange={(e) => setRect1Position(e.target.value as any)}>
                         {Object.keys(edgeConnectionPoints).map((key) => (
                             <option key={key} value={key}>
                                 {key}
@@ -234,8 +253,8 @@ function CanvasComponentGraph() {
                     </select>
                 </label>
                 <label>
-                    Rect2 Position:
-                    <select value={rect2Position} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRect2Position(e.target.value as 'left' | 'right' | 'top' | 'bottom')}>
+                    Rect2 edge:
+                    <select value={rect2Position} onChange={(e) => setRect2Position(e.target.value as any)}>
                         {Object.keys(edgeConnectionPoints).map((key) => (
                             <option key={key} value={key}>
                                 {key}
@@ -243,7 +262,30 @@ function CanvasComponentGraph() {
                         ))}
                     </select>
                 </label>
+                <div>
+                    <label>
+                        X координата:
+                        <input
+                            type="number"
+                            value={inputX}
+                            onChange={(e) => setInputX(parseInt(e.target.value, 10))}
+                            disabled={rect1Position === 'left' || rect1Position === 'right'}
+                        />
+                    </label>
+                    <label>
+                        Y координата:
+                        <input
+                            type="number"
+                            value={inputY}
+                            onChange={(e) => setInputY(parseInt(e.target.value, 10))}
+                            disabled={rect1Position === 'top' || rect1Position === 'bottom'}
+                        />
+                    </label>
+                    <button onClick={applyCoordinates}>Apply Coordinates</button>
+                </div>
             </div>
+            <h1>Если выбрать одинаковые грани, то координаты будут меняться на rect1 и на rect2</h1>
+            <h2>Изначально можно менять координаты только для rect1</h2>
             <canvas ref={canvasRef} width={1000} height={1000}></canvas>
         </>
     );
