@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Point = {
     x: number;
@@ -25,7 +25,17 @@ type ConnectionPoint = {
 function CanvasComponentGraph() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
+    const [rect1Position, setRect1Position] = useState<'left' | 'right' | 'top' | 'bottom'>('left');
+    const [rect2Position, setRect2Position] = useState<'left' | 'right' | 'top' | 'bottom'>('top');
+
     const OFFSET = 10; // Смещение для отступа линии от края
+
+    const edgeConnectionPoints: Record<string, ConnectionPoint> = {
+        left: { point: { x: -50, y: 0 }, angle: 180 },
+        right: { point: { x: 50, y: 0 }, angle: 0 },
+        top: { point: { x: 0, y: -50 }, angle: -90 },
+        bottom: { point: { x: 0, y: 50 }, angle: 90 },
+    };
 
     const getConnectedEdge = (rect: Rect, point: Point): string => {
         const left = rect.position.x - rect.size.width / 2;
@@ -173,8 +183,8 @@ function CanvasComponentGraph() {
         const rect1: Rect = { position: { x: 150, y: 150 }, size: { width: 100, height: 100 } };
         const rect2: Rect = { position: { x: 400, y: 300 }, size: { width: 100, height: 100 } };
 
-        const cPoint1: ConnectionPoint = { point: { x: -50, y: -30 }, angle: 180 };
-        const cPoint2: ConnectionPoint = { point: { x: 0, y: 50 }, angle: 90 };
+        const cPoint1: ConnectionPoint = edgeConnectionPoints[rect1Position];
+        const cPoint2: ConnectionPoint = edgeConnectionPoints[rect2Position];
 
         const start = {
             x: rect1.position.x + cPoint1.point.x,
@@ -208,9 +218,35 @@ function CanvasComponentGraph() {
 
         drawLinesToAdjustedPoints(ctx, start, adjustedStart, end, adjustedEnd);
         drawPath(ctx, path);
-    }, []);
+    }, [rect1Position, rect2Position]);
 
-    return <canvas ref={canvasRef} width={1000} height={1000}></canvas>;
-}
+    return (
+        <>
+            <div>
+                <label>
+                    Rect1 Position:
+                    <select value={rect1Position} onChange={(e) => setRect1Position(e.target.value as any)}>
+                        {Object.keys(edgeConnectionPoints).map((key) => (
+                            <option key={key} value={key}>
+                                {key}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <label>
+                    Rect2 Position:
+                    <select value={rect2Position} onChange={(e) => setRect2Position(e.target.value as any)}>
+                        {Object.keys(edgeConnectionPoints).map((key) => (
+                            <option key={key} value={key}>
+                                {key}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            </div>
+            <canvas ref={canvasRef} width={1000} height={1000}></canvas>
+        </>
+    );
+};
 
 export default CanvasComponentGraph;
