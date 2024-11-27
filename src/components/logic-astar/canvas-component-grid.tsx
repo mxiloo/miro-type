@@ -238,14 +238,14 @@ function CanvasComponentGrid() {
 
         drawLinesToAdjustedPoints(ctx, start, adjustedStart, end, adjustedEnd);
         drawPath(ctx, path);
-    }, [rect1Position, rect2Position]);
+    }, [rect1Position, rect2Position, edgeConnectionPoints]);
 
     return (
         <>
             <div>
                 <label>
                     Rect1 Position:
-                    <select value={rect1Position} onChange={(e) => setRect1Position(e.target.value as any)}>
+                    <select value={rect1Position} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRect1Position(e.target.value as 'left' | 'right' | 'top' | 'bottom')}>
                         {Object.keys(edgeConnectionPoints).map((key) => (
                             <option key={key} value={key}>
                                 {key}
@@ -255,7 +255,7 @@ function CanvasComponentGrid() {
                 </label>
                 <label>
                     Rect2 Position:
-                    <select value={rect2Position} onChange={(e) => setRect2Position(e.target.value as any)}>
+                    <select value={rect2Position} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRect2Position(e.target.value as 'left' | 'right' | 'top' | 'bottom')}>
                         {Object.keys(edgeConnectionPoints).map((key) => (
                             <option key={key} value={key}>
                                 {key}
