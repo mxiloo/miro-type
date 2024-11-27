@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Point = {
     x: number;
@@ -36,12 +36,12 @@ function CanvasComponentGraph() {
 
     const OFFSET = 10; // Смещение для отступа линии от края
 
-    const edgeConnectionPoints: Record<string, ConnectionPoint> = {
-        left: { point: { x: -50, y: yPosition === undefined ? 0 : yPosition }, angle: 180 },
-        right: { point: { x: 50, y: yPosition === undefined ? 0 : yPosition }, angle: 0 },
-        top: { point: { x: xPosition === undefined ? 0 : xPosition, y: -50 }, angle: -90 },
-        bottom: { point: { x: xPosition === undefined ? 0 : xPosition, y: 50 }, angle: 90 },
-    };
+    const edgeConnectionPoints = useMemo(() => ({
+        left: { point: { x: -50, y: yPosition ?? 0 }, angle: 180 },
+        right: { point: { x: 50, y: yPosition ?? 0 }, angle: 0 },
+        top: { point: { x: xPosition ?? 0, y: -50 }, angle: -90 },
+        bottom: { point: { x: xPosition ?? 0, y: 50 }, angle: 90 },
+    }), [xPosition, yPosition]);
 
     const applyCoordinates = () => {
         // Обновляем координаты только при нажатии кнопки
@@ -244,7 +244,7 @@ function CanvasComponentGraph() {
             <div>
                 <label>
                     Rect1 edge:
-                    <select value={rect1Position} onChange={(e) => setRect1Position(e.target.value as any)}>
+                    <select value={rect1Position} onChange={(e : React.ChangeEvent<HTMLSelectElement>) => setRect1Position(e.target.value as 'left' | 'right' | 'top' | 'bottom')}>
                         {Object.keys(edgeConnectionPoints).map((key) => (
                             <option key={key} value={key}>
                                 {key}
@@ -254,7 +254,7 @@ function CanvasComponentGraph() {
                 </label>
                 <label>
                     Rect2 edge:
-                    <select value={rect2Position} onChange={(e) => setRect2Position(e.target.value as any)}>
+                    <select value={rect2Position} onChange={(e : React.ChangeEvent<HTMLSelectElement>) => setRect2Position(e.target.value as 'left' | 'right' | 'top' | 'bottom')}>
                         {Object.keys(edgeConnectionPoints).map((key) => (
                             <option key={key} value={key}>
                                 {key}
